@@ -1,32 +1,30 @@
-<!-- custom-cursor.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGL Effect + Custom Cursor</title>
   <style>
-    /* Ẩn con trỏ mặc định */
-    body, html { margin:0; padding:0; width:100%; height:100%; cursor:none; overflow:hidden; }
-    /* Wrapper phủ toàn màn hình, không chặn sự kiện chuột */
+    /* Toàn màn hình */
+    html, body { margin:0; padding:0; overflow:hidden; width:100%; height:100%; cursor:none; }
+    /* Canvas WebGL */
+    #webgl-bg { position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; }
+    /* Cursor wrapper */
     .cursor-wrapper {
-      position:fixed; top:0; left:0;
-      width:100%; height:100%; pointer-events:none;
-      z-index:9999;
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; z-index:10;
     }
-    /* Chấm nhỏ theo chuột */
     .cursor-dot {
       position:absolute; width:8px; height:8px;
       border-radius:50%; background:#fff;
       transform:translate(-50%,-50%);
     }
-    /* Vòng outline mượt mà */
     .cursor-outline {
       position:absolute; width:32px; height:32px;
       border:2px solid #fff; border-radius:50%;
       transform:translate(-50%,-50%) scale(1);
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      transition: transform .25s ease, opacity .25s ease;
     }
-    /* Khi hover vào element interactive */
     .cursor-hover .cursor-outline {
       transform:translate(-50%,-50%) scale(1.5);
       opacity:0.6;
@@ -34,33 +32,118 @@
   </style>
 </head>
 <body>
+  <!-- WebGL Background -->
+  <div id="webgl-bg"></div>
+
+  <!-- Custom Cursor -->
   <div class="cursor-wrapper">
     <div class="cursor-outline"></div>
     <div class="cursor-dot"></div>
   </div>
+
+  <!-- Three.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <!-- GLSL noise lib (tuỳ chọn) -->
+  <script src="https://cdn.jsdelivr.net/gh/ashima/webgl-noise@latest/noise2D.glsl"></script>
+
   <script>
-    const dot = document.querySelector('.cursor-dot');
-    const outline = document.querySelector('.cursor-outline');
-    let mouseX=0, mouseY=0, outlineX=0, outlineY=0;
-    // Bắt sự kiện chuột
-    window.addEventListener('mousemove', e => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      dot.style.transform = `translate(${mouseX}px,${mouseY}px)`;
+  // === 1. WebGL Effect ===
+  (function(){
+    const container = document.getElementById('webgl-bg');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+    camera.position.z = 2;
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    const geo = new THREE.PlaneGeometry(2,2,128,128);
+    const mat = new THREE.RawShaderMaterial({
+      uniforms:{
+        u_time:      { value: 0 },
+        u_mouse:     { value: new THREE.Vector2() },
+        u_resolution:{ value: new THREE.Vector2(container.clientWidth, container.clientHeight) }
+      },
+      vertexShader:`
+        precision highp float;
+        attribute vec3 position;
+        attribute vec2 uv;
+        uniform mat4 projectionMatrix;
+        uniform mat4 modelViewMatrix;
+        uniform float u_time;
+        varying vec2 vUv;
+
+        // Simple sin-based noise; thay bằng GLSL_SIMPLEX nếu muốn
+        float noise(vec2 p){ return sin(p.x*10.)*sin(p.y*10.); }
+
+        void main(){
+          vUv = uv;
+          vec3 pos = position;
+          float n = noise(pos.xy + u_time*0.1);
+          pos.z += n * 0.1;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.);
+        }
+      `,
+      fragmentShader:`
+        precision highp float;
+        varying vec2 vUv;
+        uniform float u_time;
+        void main(){
+          vec3 c = mix(vec3(0.05,0.1,0.2), vec3(0.2,0.35,0.6), vUv.y + 0.1*sin(u_time*0.5));
+          gl_FragColor = vec4(c,1.);
+        }
+      `
     });
-    // Vòng outline theo lag và mượt
-    function animate() {
-      outlineX += (mouseX - outlineX) * 0.15;
-      outlineY += (mouseY - outlineY) * 0.15;
-      outline.style.transform = `translate(${outlineX}px,${outlineY}px)`;
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+
+    // Mouse interaction
+    window.addEventListener('mousemove', e=>{
+      mat.uniforms.u_mouse.value.set(
+        e.clientX / container.clientWidth,
+        1 - e.clientY / container.clientHeight
+      );
+    });
+
+    // Animate
+    function animate(t){
+      mat.uniforms.u_time.value = t / 1000;
+      renderer.render(scene, camera);
       requestAnimationFrame(animate);
     }
-    animate();
-    // Scale khi hover vào link/button
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    animate(0);
+
+    // Responsive
+    window.addEventListener('resize', ()=>{
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      mat.uniforms.u_resolution.value.set(container.clientWidth, container.clientHeight);
     });
+  })();
+
+  // === 2. Custom Cursor ===
+  (function(){
+    const dot = document.querySelector('.cursor-dot');
+    const outline = document.querySelector('.cursor-outline');
+    let mx=0,my=0,ox=0,oy=0;
+    window.addEventListener('mousemove', e=>{
+      mx = e.clientX; my = e.clientY;
+      dot.style.transform = `translate(${mx}px,${my}px)`;
+    });
+    function loop(){
+      ox += (mx-ox)*0.15; oy += (my-oy)*0.15;
+      outline.style.transform = `translate(${ox}px,${oy}px)`;
+      requestAnimationFrame(loop);
+    }
+    loop();
+    document.querySelectorAll('a,button').forEach(el=>{
+      el.addEventListener('mouseenter', ()=>document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', ()=>document.body.classList.remove('cursor-hover'));
+    });
+  })();
   </script>
 </body>
 </html>
