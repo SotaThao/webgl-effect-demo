@@ -1,0 +1,66 @@
+<!-- custom-cursor.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* Ẩn con trỏ mặc định */
+    body, html { margin:0; padding:0; width:100%; height:100%; cursor:none; overflow:hidden; }
+    /* Wrapper phủ toàn màn hình, không chặn sự kiện chuột */
+    .cursor-wrapper {
+      position:fixed; top:0; left:0;
+      width:100%; height:100%; pointer-events:none;
+      z-index:9999;
+    }
+    /* Chấm nhỏ theo chuột */
+    .cursor-dot {
+      position:absolute; width:8px; height:8px;
+      border-radius:50%; background:#fff;
+      transform:translate(-50%,-50%);
+    }
+    /* Vòng outline mượt mà */
+    .cursor-outline {
+      position:absolute; width:32px; height:32px;
+      border:2px solid #fff; border-radius:50%;
+      transform:translate(-50%,-50%) scale(1);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    /* Khi hover vào element interactive */
+    .cursor-hover .cursor-outline {
+      transform:translate(-50%,-50%) scale(1.5);
+      opacity:0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="cursor-wrapper">
+    <div class="cursor-outline"></div>
+    <div class="cursor-dot"></div>
+  </div>
+  <script>
+    const dot = document.querySelector('.cursor-dot');
+    const outline = document.querySelector('.cursor-outline');
+    let mouseX=0, mouseY=0, outlineX=0, outlineY=0;
+    // Bắt sự kiện chuột
+    window.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      dot.style.transform = `translate(${mouseX}px,${mouseY}px)`;
+    });
+    // Vòng outline theo lag và mượt
+    function animate() {
+      outlineX += (mouseX - outlineX) * 0.15;
+      outlineY += (mouseY - outlineY) * 0.15;
+      outline.style.transform = `translate(${outlineX}px,${outlineY}px)`;
+      requestAnimationFrame(animate);
+    }
+    animate();
+    // Scale khi hover vào link/button
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  </script>
+</body>
+</html>
