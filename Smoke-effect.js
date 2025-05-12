@@ -1,25 +1,23 @@
-import noise2D from './noise2D.glsl';
+// smoke-effect.js
+// === copy noise2D.glsl vào đây ===
+const noise2D = `
+// --- paste toàn bộ code noise2D.glsl ---
+`;
 
-(() => {
-  // 1. Khởi tạo scene, camera, renderer
+(function(){
   const canvas = document.getElementById('canvas');
-  const scene = new THREE.Scene();
+  const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 10);
   camera.position.z = 2;
-
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(devicePixelRatio);
 
-  // 2. PlaneGeometry subdivided cao
-  const geo = new THREE.PlaneGeometry(2, 2, 200, 200);
-
-  // 3. ShaderMaterial tuỳ chỉnh volumetric smoke
+  const geo = new THREE.PlaneGeometry(2,2,200,200);
   const mat = new THREE.RawShaderMaterial({
     uniforms: {
-      u_time:      { value: 0.0 },
-      u_resolution:{ value: new THREE.Vector2(innerWidth, innerHeight) },
-      u_mouse:     { value: new THREE.Vector2(0,0) }
+      u_time:      { value: 0 },
+      u_mouse:     { value: new THREE.Vector2() },
     },
     vertexShader: `
       precision highp float;
@@ -28,83 +26,64 @@ import noise2D from './noise2D.glsl';
       uniform mat4 projectionMatrix;
       uniform mat4 modelViewMatrix;
       varying vec2 vUv;
-      void main() {
+      void main(){
         vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
       }
     `,
     fragmentShader: `
-      #version 300 es
       precision highp float;
-      #define PI 3.14159265359
-
-      uniform float u_time;
-      uniform vec2 u_resolution;
-      uniform vec2 u_mouse;
       varying vec2 vUv;
-
-      // Import noise2D
+      uniform float u_time;
+      uniform vec2 u_mouse;
       ${noise2D}
 
-      // Fractal Brownian Motion
-      float fbm(vec2 p) {
-        float f = 0.0;
+      // FBM function
+      float fbm(vec2 p){
+        float f=0.;
         mat2 m = mat2(1.6,1.2,-1.2,1.6);
-        f += 0.5000 * noise(p);      p = m * p * 2.02;
-        f += 0.2500 * noise(p);      p = m * p * 2.03;
-        f += 0.1250 * noise(p);      p = m * p * 2.01;
-        f += 0.0625 * noise(p);
+        f += .500 * noise(p); p = m * p * 2.02;
+        f += .250 * noise(p); p = m * p * 2.03;
+        f += .125 * noise(p); p = m * p * 2.01;
+        f += .0625* noise(p);
         return f;
       }
 
-      void main() {
-        // Tọa độ từ -1..1
-        vec2 uv = vUv * 2.0 - 1.0;
-        // Di chuyển noise theo thời gian và chuột
-        vec2 p = uv * 1.5 + u_mouse * 0.5;
-        float t = u_time * 0.1;
-        // Tạo nhiều octaves smoke
-        float n = fbm(p + t);
-        float n2 = fbm(p * 2.0 - t * 0.5);
-        // Blend 2 lớp noise
-        float smoke = smoothstep(0.3, 0.7, n * n2);
-        // Tạo gradient màu khói
-        vec3 c1 = vec3(0.05, 0.05, 0.06);
-        vec3 c2 = vec3(0.6, 0.6, 0.7);
-        vec3 color = mix(c1, c2, smoke);
-        // Tính alpha fade ở mép
-        float dist = length(uv);
-        float alpha = (1.0 - smoothstep(0.8, 1.0, dist)) * smoke;
-        gl_FragColor = vec4(color, alpha);
+      void main(){
+        vec2 uv = vUv*2. - 1.;
+        float t = u_time*0.1;
+        vec2 p  = uv*1.5 + u_mouse*0.5;
+        float n  = fbm(p + t);
+        float n2 = fbm(p*2. - t*.5);
+        float smoke = smoothstep(.3,.7, n*n2);
+        vec3 c1 = vec3(.05,.05,.06), c2 = vec3(.6,.6,.7);
+        vec3 col = mix(c1, c2, smoke);
+        float alpha = smoke * (1. - smoothstep(.8,1., length(uv)));
+        gl_FragColor = vec4(col, alpha);
       }
     `,
     transparent: true
   });
 
-  // 4. Mesh + add to scene
-  const mesh = new THREE.Mesh(geo, mat);
-  scene.add(mesh);
+  scene.add(new THREE.Mesh(geo, mat));
 
-  // 5. Bắt sự kiện chuột để tương tác
   window.addEventListener('mousemove', e => {
-    mat.uniforms.u_mouse.value.x = ( e.clientX / innerWidth ) * 2.0 - 1.0;
-    mat.uniforms.u_mouse.value.y = 1.0 - ( e.clientY / innerHeight ) * 2.0;
+    mat.uniforms.u_mouse.value.set(
+      (e.clientX/innerWidth)*2.-1.,
+      1.-(e.clientY/innerHeight)*2.
+    );
   });
 
-  // 6. Animate loop
   const clock = new THREE.Clock();
-  function animate() {
+  (function animate(){
     mat.uniforms.u_time.value = clock.getElapsedTime();
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
-  }
-  animate();
+  })();
 
-  // 7. Responsive
-  window.addEventListener('resize', () => {
+  window.addEventListener('resize', ()=>{
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth/innerHeight;
     camera.updateProjectionMatrix();
-    mat.uniforms.u_resolution.value.set(innerWidth, innerHeight);
   });
 })();
