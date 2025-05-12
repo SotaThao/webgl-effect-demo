@@ -52,7 +52,7 @@ float noise(vec2 v) {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x000000, 0);  // transparent background
+  renderer.setClearColor(0x141414, 1);  // transparent background
 
   // 2. Create a subdivided plane
   const geo = new THREE.PlaneGeometry(2, 2, 200, 200);
