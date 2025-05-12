@@ -56,12 +56,12 @@ float noise(vec2 v) {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x141414, 1);
+  renderer.setClearColor(0x141414, 1);  // nền #141414
 
   // 2. Subdivided plane
   const geo = new THREE.PlaneGeometry(2, 2, 200, 200);
 
-  // 3. Shader material with stronger smoke
+  // 3. Shader material with stronger, swirly smoke
   const mat = new THREE.RawShaderMaterial({
     uniforms: {
       u_time:  { value: 0 },
@@ -99,23 +99,29 @@ float noise(vec2 v) {
       }
 
       void main() {
+        // Normalize UV to [-1,1]
         vec2 uv = vUv * 2.0 - 1.0;
-        float t  = u_time * 0.1;
-        vec2 p   = uv * 1.5 + u_mouse * 0.5;
-        float n1 = fbm(p + t);
-        float n2 = fbm(p * 2.0 - t * 0.5);
 
-        // 1. Stronger smoke threshold
-        float smoke = smoothstep(0.2, 0.6, n1 * n2);
+        // Add swirl based on distance + time
+        float angle = length(uv) * 3.1415 + u_time * 0.2;
+        mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+        vec2 p = rot * uv * 1.2 + u_mouse * 0.5;
 
-        // 2. Brighter, high-contrast colors
+        // Two layers of noise
+        float n1 = fbm(p + u_time * 0.2);
+        float n2 = fbm(p * 2.3 - u_time * 0.6);
+
+        // Stronger smoke threshold
+        float smoke = smoothstep(0.1, 0.5, n1 * n2);
+
+        // Brighter, high-contrast colors
         vec3 c1 = vec3(0.5, 0.5, 0.55);
         vec3 c2 = vec3(1.0, 1.0, 1.0);
         vec3 col = mix(c1, c2, smoke);
 
-        // 3. Higher alpha
-        float alpha = smoke * (1.0 - smoothstep(0.8, 1.0, length(uv)));
-        alpha = clamp(alpha * 2.0, 0.0, 1.0);
+        // Higher alpha and soft edge
+        float alpha = smoke * (1.0 - smoothstep(0.7, 1.0, length(uv)));
+        alpha = clamp(alpha * 3.0, 0.0, 1.0);
 
         gl_FragColor = vec4(col, alpha);
       }
