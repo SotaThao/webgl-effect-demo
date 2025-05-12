@@ -11,9 +11,7 @@ float noise(vec2 v) {
                      -0.577350269189626,  0.024390243902439);
   vec2 i = floor(v + dot(v, C.yy));
   vec2 x0 = v - i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y)
-    ? vec2(1.0, 0.0)
-    : vec2(0.0, 1.0);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
   vec4 x12 = x0.xyxy + C.xxzz;
   x12.xy -= i1;
   i = mod289(i);
@@ -53,17 +51,17 @@ float noise(vec2 v) {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    alpha: false,          // full opaque (we set clearColor)
+    alpha: false,
     antialias: true
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x141414, 1);  // match background #141414
+  renderer.setClearColor(0x141414, 1);
 
   // 2. Subdivided plane
   const geo = new THREE.PlaneGeometry(2, 2, 200, 200);
 
-  // 3. Shader material
+  // 3. Shader material with stronger smoke
   const mat = new THREE.RawShaderMaterial({
     uniforms: {
       u_time:  { value: 0 },
@@ -106,15 +104,18 @@ float noise(vec2 v) {
         vec2 p   = uv * 1.5 + u_mouse * 0.5;
         float n1 = fbm(p + t);
         float n2 = fbm(p * 2.0 - t * 0.5);
-        float smoke = smoothstep(0.3, 0.7, n1 * n2);
 
-        // Bright smoke colors for dark bg
-        vec3 c1 = vec3(0.3, 0.3, 0.35);
+        // 1. Stronger smoke threshold
+        float smoke = smoothstep(0.2, 0.6, n1 * n2);
+
+        // 2. Brighter, high-contrast colors
+        vec3 c1 = vec3(0.5, 0.5, 0.55);
         vec3 c2 = vec3(1.0, 1.0, 1.0);
         vec3 col = mix(c1, c2, smoke);
 
+        // 3. Higher alpha
         float alpha = smoke * (1.0 - smoothstep(0.8, 1.0, length(uv)));
-        alpha = clamp(alpha * 1.5, 0.0, 1.0);
+        alpha = clamp(alpha * 2.0, 0.0, 1.0);
 
         gl_FragColor = vec4(col, alpha);
       }
@@ -122,7 +123,7 @@ float noise(vec2 v) {
     transparent: true
   });
 
-  // 4. Add to scene
+  // 4. Add mesh
   scene.add(new THREE.Mesh(geo, mat));
 
   // 5. Mouse interaction
