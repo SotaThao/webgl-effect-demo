@@ -3,113 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Custom Cursor Demo</title>
+  <title>Volumetric Smoke Effect</title>
   <style>
-    /* 1. Ẩn con trỏ hệ thống */
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      cursor: none;
-      overflow: hidden;
-      background: #111; /* hoặc màu nền bạn thích */
-    }
-
-    /* 2. Wrapper phủ toàn màn hình, không cản sự kiện chuột */
-    .cursor-wrapper {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 9999;
-    }
-
-    /* 3. Chấm nhỏ theo chuột */
-    .cursor-dot {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ffffff;
-      transform: translate(-50%, -50%);
-      transition: background 0.2s ease;
-    }
-
-    /* 4. Vòng viền lớn hơn */
-    .cursor-outline {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      border: 2px solid #ffffff;
-      border-radius: 50%;
-      transform: translate(-50%, -50%) scale(1);
-      transition: transform 0.25s ease, opacity 0.25s ease;
-      opacity: 1;
-    }
-
-    /* 5. Khi hover vào element tương tác */
-    .cursor-hover .cursor-outline {
-      transform: translate(-50%, -50%) scale(1.5);
-      opacity: 0.6;
-    }
-
-    /* Ví dụ vài element để hover */
-    .btn {
-      display: inline-block;
-      padding: 8px 16px;
-      margin: 40px;
-      background: #fff;
-      color: #111;
-      text-decoration: none;
-      border-radius: 4px;
-    }
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
+    #canvas { width:100%; height:100%; display:block; }
   </style>
 </head>
 <body>
-
-  <!-- Nội dung demo -->
-  <a href="#" class="btn">Hover me</a>
-  <button class="btn">Click me</button>
-
-  <!-- 2 phần tử custom cursor -->
-  <div class="cursor-wrapper">
-    <div class="cursor-outline"></div>
-    <div class="cursor-dot"></div>
-  </div>
-
-  <script>
-    ;(function() {
-      const dot = document.querySelector('.cursor-dot');
-      const outline = document.querySelector('.cursor-outline');
-      let mouseX = 0, mouseY = 0;
-      let outlineX = 0, outlineY = 0;
-
-      // Cập nhật vị trí dot ngay lập tức
-      window.addEventListener('mousemove', e => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
-      });
-
-      // Animate outline với easing để tạo trailing effect
-      function animateOutline() {
-        outlineX += (mouseX - outlineX) * 0.15;
-        outlineY += (mouseY - outlineY) * 0.15;
-        outline.style.transform = `translate(${outlineX}px, ${outlineY}px)`;
-        requestAnimationFrame(animateOutline);
-      }
-      animateOutline();
-
-      // Phóng to/về kích thước bình thường khi hover vào <a> hoặc <button>
-      document.querySelectorAll('a, button').forEach(el => {
-        el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-        el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-      });
-    })();
-  </script>
-
+  <canvas id="canvas"></canvas>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ashima/webgl-noise@latest/noise2D.glsl"></script>
+  <script src="smoke-effect.js"></script>
 </body>
 </html>
