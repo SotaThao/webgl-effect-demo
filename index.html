@@ -4,22 +4,29 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Volumetric Smoke Effect</title>
- <style>
--  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
-+  html, body {
-+    margin:0;
-+    padding:0;
-+    width:100%;
-+    height:100%;
-+    overflow:hidden;
-+    background: transparent;   /* hoặc background: #000; để đổi nền đen */
-+  }
-   #canvas { width:100%; height:100%; display:block; }
-</style>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;    /* Trong suốt, để parent page show qua */
+    }
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
 </head>
 <body>
+  <!-- Canvas cho Three.js -->
   <canvas id="canvas"></canvas>
+
+  <!-- Three.js thư viện -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <script src="Smoke-effect.js"></script>  <!-- file đã đổi tên chữ thường -->
+  <!-- Script hiệu ứng khói (đã đổi tên thành lowercase) -->
+  <script src="smoke-effect.js"></script>
 </body>
 </html>
