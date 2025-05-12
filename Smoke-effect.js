@@ -51,7 +51,9 @@ float noise(vec2 v) {
   const scene    = new THREE.Scene();
   const camera   = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10);
   camera.position.z = 2;
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000, 0);   // <-- clear với alpha = 0, để background thật sự trong suốt
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
